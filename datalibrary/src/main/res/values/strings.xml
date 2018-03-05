@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">DataLibrary</string>
+    <string name="str_flow_num">FlowNum</string>
+    <string name="str_message">Message</string>
+    <string name="str_parameter">Parameter</string>
+    <string name="str_terminal_info">终端信息</string>
+    <string name="str_protocol_serial">ProtocolSerial</string>
+    <string name="str_picture_number">picture_number</string>
+    <string name="str_class_id">class_id</string>
+    <string name="str_ban_state">strBanState</string>
+</resources>
