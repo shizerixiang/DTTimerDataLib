@@ -235,6 +235,7 @@ object OperationHelper {
     fun getDataContentByMsgId(msgId: String): PasBodyMsg.DataContent {
         return when (msgId) {
             MessageID.ServerSetAppParamID -> AppParamData() // 设置计时终端应用参数
+            MessageID.ClientUpPicID -> UploadPictureData() // 照片数据包上传
             MessageID.ClientParamAnswerID -> AppParamData.AppParamAnswerData() // 设置应用参数应答
             MessageID.ServerCoachLoginAnswerID -> CoachLoginData.LoginAnswerData() // 教练员登录应答
             MessageID.ServerCoachLogoutAnswerID -> CoachLogoutData.LogoutAnswerData() // 教练员登出应答

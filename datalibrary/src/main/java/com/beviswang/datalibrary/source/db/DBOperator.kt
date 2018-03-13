@@ -6,8 +6,12 @@ import com.beviswang.datalibrary.Publish
 import com.beviswang.datalibrary.logD
 import com.beviswang.datalibrary.logE
 import com.beviswang.datalibrary.message.GNSSDataMsg
+import com.beviswang.datalibrary.message.PackageMsg
+import com.beviswang.datalibrary.message.PasBodyMsg
+import com.beviswang.datalibrary.message.passthrough.CacheData
 import com.beviswang.datalibrary.message.passthrough.HoursReportData
 import com.beviswang.datalibrary.model.PhotoModel
+import com.beviswang.datalibrary.util.ConvertHelper
 import com.beviswang.datalibrary.util.MessageHelper
 import com.beviswang.datalibrary.util.SystemHelper
 
@@ -86,6 +90,7 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
 
     override fun savePictureInfo(photoModel: PhotoModel): Boolean {
         logD("$LOG_HINT 保存图片信息")
+        var isCache = true
         try {
             val sql = "insert into PhotoInfo(picId,path,personnelNum,uploadModel," +
                     "cameraChannelNum,pictureSize,eventType,classId,mGNSSDataMsg,faceReliability," +
@@ -95,10 +100,11 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
                     photoModel.eventType, photoModel.classId, photoModel.mGNSSDataMsg!!.toString(),
                     photoModel.faceReliability, SystemHelper.systemTimeStamp, getIsCarOnLine()))
         } catch (e: Exception) {
+            isCache = false
             e.printStackTrace()
-            return false
+        } finally {
+            return isCache
         }
-        return true
     }
 
     override fun getOffLinePictureInfo(): ArrayList<PhotoModel>? {
@@ -206,6 +212,7 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
     override fun cacheHoursMsg(hoursReportData: HoursReportData): Boolean {
         logD("$LOG_HINT 缓存学时消息")
         hoursReportData.mGNSSData.setIsReissueMsg(true)
+        var isCache = true
         try {
             val sql = "insert into HoursReportTable(hoursNum,coachNum,studentNum,classId,reportTime," +
                     "curCourse,recodeState,maxSpeed,mileage,location,time,isUpload) values(?,?,?,?,?,?,?,?,?,?,?,?)"
@@ -215,10 +222,11 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
                     hoursReportData.mileage, hoursReportData.mGNSSData.toString(),
                     SystemHelper.systemTimeStamp, getIsCarOnLine()))
         } catch (e: Exception) {
+            isCache = false
             e.printStackTrace()
-            return false
+        } finally {
+            return isCache
         }
-        return true
     }
 
     override fun getOffLineHoursMsg(): ArrayList<HoursReportData>? {
@@ -257,14 +265,16 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
 
     override fun cacheGNSSMsg(mGNSSDataMsg: GNSSDataMsg): Boolean {
         logD("$LOG_HINT 缓存 GNSS 数据包")
+        var isCache = true
         try {
             val sql = "insert into LocationTable(locationMsg,isUpload) values(?,?)"
             execDBSQL(sql, arrayOf(mGNSSDataMsg.toString(), getIsCarOnLine()))
         } catch (e: Exception) {
+            isCache = false
             e.printStackTrace()
-            return false
+        } finally {
+            return isCache
         }
-        return true
     }
 
     override fun getOffLineGNSSMsg(): ArrayList<GNSSDataMsg>? {
@@ -319,6 +329,56 @@ class DBOperator(context: Context, dbName: String, version: Int) : IMsgCacheOper
             db.close()
         }
         return dataList
+    }
+
+    override fun cacheMsg(packageMsg: PackageMsg): Boolean {
+        logD("$LOG_HINT 缓存离线透传消息包")
+        var isCache = true
+        try {
+            val sql = "insert into CacheMsgTable(msgId,msgContent) values(?,?)"
+            val pasMsg = packageMsg.getMsgBody() as PasBodyMsg
+            execDBSQL(sql, arrayOf(pasMsg.getMsgId(), pasMsg.getDataContent()!!.toString()))
+        } catch (e: Exception) {
+            isCache = false
+            e.printStackTrace()
+        } finally {
+            return isCache
+        }
+    }
+
+    override fun getOffLineMsg(): ArrayList<PackageMsg>? {
+        logD("$LOG_HINT 获取缓存的离线透传消息包")
+        val db = mDBHelper.readableDatabase
+        var pMsgArray: ArrayList<PackageMsg>? = ArrayList()
+        try {
+            val sql = "select * from CacheMsgTable"
+            val cursor = db.rawQuery(sql, null)
+            while (cursor.moveToNext()) {
+                val pMsg = MessageHelper.getUpstreamMsg(cursor.getString(
+                        cursor.getColumnIndex("msgId")), CacheData(
+                        cursor.getString(cursor.getColumnIndex("msgContent"))),
+                        true, false)
+                pMsg.mId = cursor.getInt(cursor.getColumnIndex("id"))
+                pMsgArray?.add(pMsg)
+            }
+            cursor.close()
+        } catch (e: Exception) {
+            pMsgArray = null
+            e.printStackTrace()
+        } finally {
+            db.close()
+            return pMsgArray
+        }
+    }
+
+    override fun deleteMsg(packageId: Int) {
+        logD("$LOG_HINT 删除缓存的离线透传消息包")
+        try {
+            val sql = "delete from CacheMsgTable where id=?"
+            execDBSQL(sql, arrayOf(packageId))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
 //    override fun cachePictureInitMsg(upInitData: UploadPictureData.UpInitData): Boolean {

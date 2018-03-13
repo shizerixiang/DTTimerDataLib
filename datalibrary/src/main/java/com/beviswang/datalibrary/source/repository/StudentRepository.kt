@@ -3,6 +3,7 @@ package com.beviswang.datalibrary.source.repository
 import android.content.Context
 import android.content.Intent
 import com.beviswang.datalibrary.BaseDataSource
+import com.beviswang.datalibrary.Publish
 import com.beviswang.datalibrary.operator.IMsgOperator
 import com.beviswang.datalibrary.contract.StudentContract
 import com.beviswang.datalibrary.operator.HeartbeatOperator
@@ -26,14 +27,21 @@ class StudentRepository(context: Context) : StudentContract.IStudentDataSource {
     }
 
     override fun requestLogout(callback: BaseDataSource.LoadSourceCallback<StudentModel>) {
-        val mOperator: IMsgOperator = HeartbeatOperator.getInstance()
+        val mOperator = HeartbeatOperator.getInstance()
         val dataContent = StudentLogoutData()
         // 获取透传消息
         val pMsg = MessageHelper.getUpstreamMsg(MessageID.ClientStudentLogoutID, dataContent,
                 true, true)
+        // 车辆不在线则直接保存到数据库
+        if (!Publish.getInstance().mIsCarOnLine){
+            mOperator.mDBOperator.cacheMsg(pMsg)
+            callback.onDataLoaded(StudentModel())
+            return
+        }
         // 发送消息
         if (!mOperator.sendMsg(pMsg)) {
             callback.onDataLoadFailed("服务器连接失败")
+            mOperator.sendOver()
             return
         }
         // 接收消息

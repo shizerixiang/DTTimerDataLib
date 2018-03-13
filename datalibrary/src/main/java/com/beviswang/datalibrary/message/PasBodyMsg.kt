@@ -2,7 +2,7 @@ package com.beviswang.datalibrary.message
 
 import com.beviswang.datalibrary.Publish
 import com.beviswang.datalibrary.logD
-import com.beviswang.datalibrary.logE
+import com.beviswang.datalibrary.logI
 import com.beviswang.datalibrary.util.ConvertHelper
 import com.beviswang.datalibrary.util.MessageHelper
 import com.beviswang.datalibrary.util.OperationHelper
@@ -159,10 +159,10 @@ class PasBodyMsg : PackageMsg.MsgBody {
         fun getIsRealTimeMsg(): Boolean = msgProperty.agingType == "0"
 
         override fun toString(): String {
-            val strPS = MessageHelper.supplementStr(4, protocolSerial.toByte().toString(16), 0)
+            val strPS = MessageHelper.supplementStr(4, protocolSerial.toString(16), 0)
             protocolSerial++
             val strTN = ConvertHelper.stringGBK2HexString(terminalNum)
-            val strDLen = MessageHelper.supplementStr(8, dataLength.toByte().toString(16), 0)
+            val strDLen = MessageHelper.supplementStr(8, dataLength.toString(16), 0)
             var strDContent = ""
             if (dataLength != 0 && dataContent != null) strDContent = ConvertHelper.byteArray2HexString(dataContent!!.getDataByteArray())
             val strMsg = msgId + msgProperty.getMsgProperty() + strPS + strTN + strDLen + strDContent

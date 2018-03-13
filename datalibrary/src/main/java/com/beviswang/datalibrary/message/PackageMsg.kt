@@ -12,6 +12,7 @@ import com.beviswang.datalibrary.util.OperationHelper
  * Created by shize on 2018/1/16.
  */
 class PackageMsg {
+    var mId: Int = 0 // 本地数据库编号
     // 消息头 16 byte 总长度
     private var msgHeader: MsgHeader? = null
     // 消息体
@@ -53,7 +54,13 @@ class PackageMsg {
      * @return 获取可以发送的 byteArray
      */
     fun getSendMsg(): ByteArray {
-        return MessageHelper.addIdentificationBit(MessageHelper.addCheckCode(getPackageArray()))
+        val sendBytes = MessageHelper.addIdentificationBit(MessageHelper.addCheckCode(getPackageArray()))
+        if (!msgHeader!!.msgProperty.getIsSubPackage()) {
+            for (i in 0 until sendBytes.size) {
+                sendBytes[i] = (sendBytes[i].toInt() and 0xff).toByte()
+            }
+        }
+        return sendBytes
     }
 
     /**
@@ -403,6 +410,6 @@ class PackageMsg {
 
     companion object {
         // 消息体最大长度
-        val BODY_MAX_LENGTH = 1023
+        val BODY_MAX_LENGTH = 700
     }
 }

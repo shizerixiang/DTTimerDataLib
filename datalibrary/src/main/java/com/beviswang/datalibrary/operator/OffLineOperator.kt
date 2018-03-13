@@ -28,6 +28,7 @@ class OffLineOperator(context: Context) {
         reissueHours()
         reissueLocation()
         reissuePicture()
+        reissueCacheMsg()
     }
 
     /**
@@ -95,6 +96,21 @@ class OffLineOperator(context: Context) {
             doSend {
                 val result = MessageHelper.uploadPicture(context, it, false)
                 if (result == 0) dbOperator.updateReissuePictureInfo(it.mId)
+            }
+        }
+    }
+
+    /**
+     * 补发缓存消息
+     */
+    private fun reissueCacheMsg(){
+        val msgArray = dbOperator.getOffLineMsg()
+        msgArray?.forEach {
+            doSend {
+                val heart = HeartbeatOperator.getInstance()
+                heart.sendMsg(it)
+                val rePMsg = heart.receiveMsg()
+                if (rePMsg != null) dbOperator.deleteMsg(it.mId)
             }
         }
     }

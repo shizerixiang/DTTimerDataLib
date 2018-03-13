@@ -4,6 +4,7 @@ import com.beviswang.datalibrary.logE
 import com.beviswang.datalibrary.module.GPSModule
 import com.beviswang.datalibrary.util.ConvertHelper
 import com.beviswang.datalibrary.util.MessageHelper
+import com.beviswang.datalibrary.util.SystemHelper
 
 /**
  * 基本 GNSS 数据包 28 byte
@@ -11,7 +12,7 @@ import com.beviswang.datalibrary.util.MessageHelper
  */
 class GNSSDataMsg() : PackageMsg.MsgBody {
     /** 本地数据库编号 */
-    var mId:Int = 0
+    var mId: Int = 0
 
     /** 报警标识 4 byte */
     var alarmSign: AlarmSignMsg = AlarmSignMsg()
@@ -50,7 +51,7 @@ class GNSSDataMsg() : PackageMsg.MsgBody {
         satelliteSpeed = GPSModule.GPS_SPEED
         driveSpeed = satelliteSpeed
         direction = GPSModule.GPS_DIR
-        time = GPSModule.GPS_TIME
+        time = SystemHelper.yyMMddHHmmssData
     }
 
     override fun setBodyBytes(byteArray: ByteArray) {
@@ -76,7 +77,9 @@ class GNSSDataMsg() : PackageMsg.MsgBody {
     }
 
     override fun getBodyArray(): ByteArray {
+        // TODO 模拟数据
         return ConvertHelper.string2ByteArray(toString())
+//        return ConvertHelper.string2ByteArray("0000000000000002015d81e506e473f3003d003d01541803061659340104000000000202000003020000050204ad")
     }
 
     override fun toString(): String {
@@ -181,7 +184,7 @@ class GNSSDataMsg() : PackageMsg.MsgBody {
      */
     class StateBitMsg {
         // 0：ACC 关；1：ACC 开
-        var mACCSwitch: String = "0"
+        var mACCSwitch: String = "1"
         // 0：未定位；1：定位
         var mLocationSwitch: String = "1"
         // 0：北纬；1：南纬    北纬为正数，南纬为负数
@@ -256,6 +259,7 @@ class GNSSDataMsg() : PackageMsg.MsgBody {
 
         constructor(id: Int) : this() {
             additionalId = id
+            createAdditionalInfo()
         }
 
         constructor(byteArray: ByteArray) : this() {
@@ -264,10 +268,6 @@ class GNSSDataMsg() : PackageMsg.MsgBody {
 
         constructor(hexString: String) : this() {
             setDataByteArray(ConvertHelper.string2ByteArray(hexString))
-        }
-
-        init {
-            createAdditionalInfo()
         }
 
         override fun toString(): String {

@@ -136,6 +136,18 @@ object MessageHelper {
                 .subList(1, byteArray.size - 1).toByteArray())
 //        logD("移除标识位后：$byteString")
         // 检测是否需要转义
+//        (0 until byteString.length / 2).forEach {
+//            if (b != CONVERT_BYTE_7D) {
+//                b = byteString[it * 2].toString() + byteString[it * 2 + 1].toString()
+//                if (b != CONVERT_BYTE_7D) bytes += b
+//            } else {
+//                b += byteString[it * 2].toString() + byteString[it * 2 + 1].toString()
+//                if (b == CONVERT_BYTE_7D_OVER) b = CONVERT_BYTE_7D
+//                else if (b == CONVERT_BYTE_7E_OVER) b = CONVERT_BYTE_7E
+//                bytes += b
+//                b = ""
+//            }
+//        }
         (0 until byteString.length / 2).forEach {
             if (b != CONVERT_BYTE_7D) {
                 b = byteString[it * 2].toString() + byteString[it * 2 + 1].toString()
@@ -143,9 +155,14 @@ object MessageHelper {
             } else {
                 b += byteString[it * 2].toString() + byteString[it * 2 + 1].toString()
                 if (b == CONVERT_BYTE_7D_OVER) b = CONVERT_BYTE_7D
-                else if (b == CONVERT_BYTE_7E_OVER) b = CONVERT_BYTE_7E
-                bytes += b
-                b = ""
+                if (b == CONVERT_BYTE_7E_OVER) b = CONVERT_BYTE_7E
+                if (b.length > 2) {
+                    bytes += b.substring(0, 2)
+                    b = b.substring(2, 4)
+                } else {
+                    bytes += b
+                    b = ""
+                }
             }
         }
 //        logD("转义处理后：$bytes")
@@ -471,12 +488,58 @@ object MessageHelper {
         return pMsg
     }
 
+    /**
+     * @return 获取分包消息
+     */
+    fun getSubPackages(msgId: String, msgData: PasBodyMsg.DataContent, isResponse: Boolean,
+                       isRealTime: Boolean): ArrayList<PackageMsg> {
+        val maxPackageLen = 700 // 每个包的最大长度
+        val arrayPMsg = ArrayList<PackageMsg>()
+        val msgBody = PasBodyMsg()
+        msgBody.setMsgId(msgId)
+        msgBody.setDataContent(msgData)
+        msgBody.setIsRealTimeMsg(isRealTime)
+        msgBody.setIsResponse(isResponse)
+        val pasMsgByteArray = msgBody.getBodyArray()
+        val msgDataLen = pasMsgByteArray.size
+        var subPackageCount = msgDataLen / maxPackageLen // 分包个数
+        val lastSubPackageLen = msgDataLen % maxPackageLen // 最后一个分包的长度
+        if (lastSubPackageLen > 0) subPackageCount += 1
+        (0 until subPackageCount).forEach {
+            val msgHeader = PackageMsg.MsgHeader()
+            msgHeader.msgId = MessageID.ClientUpstreamID
+            msgHeader.setIsSubPackage(true)
+            msgHeader.setPackageCount(subPackageCount)
+            msgHeader.setPackageId(it + 1)
+            val subMsgBody = SubPackageMsg()
+            val pMsg = PackageMsg()
+            if (it < subPackageCount - 1) {
+                // 非最后一个分包
+                subMsgBody.setBodyBytes(pasMsgByteArray.asList().subList(it * maxPackageLen,
+                        (it + 1) * maxPackageLen).toByteArray())
+            } else {
+                // 是最后一个分包
+                subMsgBody.setBodyBytes(pasMsgByteArray.asList().subList(it * maxPackageLen,
+                        it * maxPackageLen + lastSubPackageLen).toByteArray())
+            }
+            pMsg.setMessage(msgHeader, subMsgBody)
+            arrayPMsg.add(pMsg)
+        }
+        return arrayPMsg
+    }
+
     /** @return 获取位置信息消息包 */
     fun getGNSSMsg(msgId: String): PackageMsg {
         val pMsg = PackageMsg()
         val msgHeader = PackageMsg.MsgHeader()
         msgHeader.msgId = msgId
         val msgBody = GNSSDataMsg()
+        val addArray = ArrayList<GNSSDataMsg.AdditionalInfo>()
+        addArray.add(GNSSDataMsg.AdditionalInfo(0x01))
+        addArray.add(GNSSDataMsg.AdditionalInfo(0x02))
+        addArray.add(GNSSDataMsg.AdditionalInfo(0x03))
+        addArray.add(GNSSDataMsg.AdditionalInfo(0x05))
+        msgBody.additionalInfo = addArray
         pMsg.setMessage(msgHeader, msgBody)
         return pMsg
     }
@@ -525,7 +588,7 @@ object MessageHelper {
      * 129：终端主动拍照上传
      * 255：停止拍摄并上传图片
      */
-    fun uploadPicture(context: Context, picModel: PhotoModel, isRealTime: Boolean):Int {
+    fun uploadPicture(context: Context, picModel: PhotoModel, isRealTime: Boolean): Int {
         val uploadOp = PictureUploadOperator(context)
         uploadOp.mPhotoModel = picModel
         uploadOp.isRealTime = isRealTime

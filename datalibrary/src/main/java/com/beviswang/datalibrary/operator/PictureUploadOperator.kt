@@ -3,10 +3,7 @@ package com.beviswang.datalibrary.operator
 import android.content.Context
 import com.beviswang.datalibrary.Publish
 import com.beviswang.datalibrary.logE
-import com.beviswang.datalibrary.message.GNSSDataMsg
-import com.beviswang.datalibrary.message.PackageMsg
-import com.beviswang.datalibrary.message.PasBodyMsg
-import com.beviswang.datalibrary.message.RegisterResponseMsg
+import com.beviswang.datalibrary.message.*
 import com.beviswang.datalibrary.message.passthrough.UploadPictureData
 import com.beviswang.datalibrary.model.PhotoModel
 import com.beviswang.datalibrary.source.db.DBOperator
@@ -142,7 +139,6 @@ class PictureUploadOperator(context: Context) : IUploadOperator {
     /** @return 获取上传照片初始化消息数据 */
     private fun getUploadInitData(): UploadPictureData.UpInitData {
         val mPicBytes = FileHelper.file2Byte(mPhotoModel.mImagePath) ?: throw Exception("读取文件失败！")
-//        val mPicBytes = BitmapHelper.bitmap2Bytes(BitmapFactory.decodeFile(picPath))
         // 测试用代码
 //        debugCode(mPicBytes)
         logE("当前照片 byte 大小：${mPicBytes.size}")
@@ -150,9 +146,11 @@ class PictureUploadOperator(context: Context) : IUploadOperator {
         val upDataContent = UploadPictureData()
         upDataContent.pictureNumber = mPhotoModel.mId
         upDataContent.pictureData = mPicBytes
-        val pMsg = MessageHelper.getUpstreamMsg(MessageID.ClientUpPicID, upDataContent,
+//        val pMsg = MessageHelper.getUpstreamMsg(MessageID.ClientUpPicID, upDataContent,
+//                true, true)
+//        pMsgList = pMsg.getSubPackages()
+        pMsgList = MessageHelper.getSubPackages(MessageID.ClientUpPicID, upDataContent,
                 true, true)
-        pMsgList = pMsg.getSubPackages()
         // 上传图片，属性为临时属性
         val dataContent = UploadPictureData.UpInitData()
         dataContent.dataSize = mPicBytes.size
@@ -183,38 +181,9 @@ class PictureUploadOperator(context: Context) : IUploadOperator {
             } catch (e: Exception) {
                 return false
             }
-            Thread.sleep(100)
         }
         // 测试用代码
 //        checkSubPackages()
         return true
-    }
-
-    private fun debugCode(mPicBytes: ByteArray) {
-        logE("*************************************** 图片 byte *****************************************")
-        (0 until mPicBytes.size / 1024).forEach {
-            logE("图片 byte ：${ConvertHelper.byteArray2HexString(mPicBytes.asList().subList(it * 1024, it * 1024 + 1024).toByteArray())}")
-        }
-        if (mPicBytes.size % 1024 != 0)
-            logE("图片 byte ：${ConvertHelper.byteArray2HexString(mPicBytes.asList().subList(mPicBytes.size / 1024 * 1024, mPicBytes.size).toByteArray())}")
-    }
-
-    private fun checkSubPackages() {
-        val sendArrayList = ArrayList<ByteArray>()
-        pMsgList.forEach {
-            sendArrayList.add(it.getSendMsg())
-        }
-        val byteArray = MessageHelper.composeMsgPackage(sendArrayList)
-        val picBytes = byteArray.asList().subList(37, byteArray.size - 256).toByteArray()
-        logE("*************************************** 需要存储的图片 byte *****************************************")
-        debugCode(picBytes)
-        FileHelper.byte2File(picBytes, RegisterResponseMsg.filePath, "takePhoto.jpg")
-
-        logE("*************************************** 分包之后的消息体 *****************************************")
-        (0 until byteArray.size / 1024).forEach {
-            logE("图片 byte ：${ConvertHelper.byteArray2HexString(byteArray.asList().subList(it * 1024, it * 1024 + 1024).toByteArray())}")
-        }
-        if (byteArray.size % 1024 != 0)
-            logE("图片 byte ：${ConvertHelper.byteArray2HexString(byteArray.asList().subList(byteArray.size / 1024 * 1024, byteArray.size).toByteArray())}")
     }
 }

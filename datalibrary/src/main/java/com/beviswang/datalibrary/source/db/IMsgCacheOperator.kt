@@ -1,6 +1,7 @@
 package com.beviswang.datalibrary.source.db
 
 import com.beviswang.datalibrary.message.GNSSDataMsg
+import com.beviswang.datalibrary.message.PackageMsg
 import com.beviswang.datalibrary.message.passthrough.HoursReportData
 import com.beviswang.datalibrary.model.PhotoModel
 
@@ -118,6 +119,23 @@ interface IMsgCacheOperator {
 
     /** @return 获取位置信息汇报消息缓存 */
     fun getCacheGNSSMsg(): ArrayList<GNSSDataMsg>?
+
+    /**
+     * @param packageMsg 需要缓存的消息包
+     */
+    fun cacheMsg(packageMsg:PackageMsg): Boolean
+
+    /**
+     * @return 获取离线缓存的消息
+     */
+    fun getOffLineMsg():ArrayList<PackageMsg>?
+
+    /**
+     * 清除已经发送过的消息
+     *
+     * @param packageId 消息包编号
+     */
+    fun deleteMsg(packageId:Int)
 
 //    /**
 //     * 缓存照片初始化消息数据

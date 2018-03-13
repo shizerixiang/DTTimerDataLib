@@ -71,8 +71,6 @@ class DBOpenOperator(context: Context, name: String, factory: SQLiteDatabase.Cur
                 "faceReliability Integer," +                // 人脸识别置信度
                 "time integer," +                           // 拍摄时间
                 "isUpload Integer)")                        // 是否已经上传到平台 0 未上传 1 已上传
-        // 离线缓存消息
-//        db?.execSQL("create table CacheMsg()")
         // 上报学时记录数据表
         db?.execSQL("create table HoursReportTable(" +
                 "id Integer primary key autoincrement," +   // 表数据编号
@@ -93,6 +91,11 @@ class DBOpenOperator(context: Context, name: String, factory: SQLiteDatabase.Cur
                 "id Integer primary key autoincrement," +   // 汇报位置信息消息编号
                 "locationMsg text," +                       // 汇报位置信息消息包
                 "isUpload Integer)")                        // 是否已经上传到平台 0 未上传 1 已上传
+        // 离线缓存的消息，后续联网后进行补发
+        db?.execSQL("create table CacheMsgTable(" +
+                "id Integer primary key autoincrement," +   // 编号
+                "msgId text,"+                              // 消息 ID
+                "msgContent text)")                         // 消息内容
 //        // 定时拍照照片初始化消息数据表
 //        db?.execSQL("create table PhotoInitTable(" +
 //                "id Integer primary key autoincrement," +   // 表数据编号

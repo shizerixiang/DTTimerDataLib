@@ -47,6 +47,8 @@ object ConvertHelper {
         for (i in 0 until length) {
             val pos = i * 2
             d[i] = (char2Byte(hexChars[pos]).toInt() shl 4 or char2Byte(hexChars[pos + 1]).toInt()).toByte()
+            // 转换为无符号的字节
+//            d[i] = (d[i].toInt() and 0xff).toByte()
         }
         return d
     }
